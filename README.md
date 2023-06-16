@@ -107,3 +107,6 @@ kubectl delete secret airflow-gitsync --namespace airflow
 ```
 
 These steps will set up and deploy Airflow locally using Minikube and Helm, allowing you to test and run Airflow jobs in a local Kubernetes environment.
+
+## References
+1. [Airflow - Customizing the image](https://airflow.apache.org/docs/docker-stack/build.html#customizing-the-image)
