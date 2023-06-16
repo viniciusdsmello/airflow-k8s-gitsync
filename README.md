@@ -7,18 +7,18 @@ This repository contains the necessary steps and configurations to deploy Airflo
 ## Project Structure
 
 ```
-| dags/
-| docs/
-| helm/
-    values.yaml: 
-| scripts/
-    install_k8s_secrets.sh
-    install_local_dependencies.sh
-    run_airflow_local.sh
-| src/
-    Dockerfile
-    requirements.txt
-Makefile
+|-- dags/
+|-- docs/
+|-- helm/
+    |-- values.yaml: 
+|-- scripts/
+    |-- install_k8s_secrets.sh
+    |-- install_local_dependencies.sh
+    |-- run_airflow_local.sh
+|-- src/
+    |-- Dockerfile
+    |-- requirements.txt
+|-- Makefile
 ```
 
 The project structure consists of the following directories:
@@ -40,25 +40,70 @@ Before proceeding, ensure that you have the following prerequisites installed:
 1. Minikube: Needed for setting up a local Kubernetes cluster.
 1. Helm: Required for deploying Airflow using the Helm package manager.
 
-### Build Airflow Docker Image and push to remote
+### Create PersinsteVolume and Secrets
 
-To build the Docker image for Airflow with KubernetesExecutor and push it to a remote repository, follow these steps:
+You will also need to setup a PersistenVolume with **ReadWriteMany** mode. Besides, it is important to create the following secrets:
 
-Run the following command to build and push the Docker image:
+1. airflow-fernet-key: This secret should contain the Fernet key used for encryption and decryption in Airflow.
+2. airflow-gitsync: This secret should contain the necessary credentials to access your Git repository for syncing DAGs.
+
+In order to set up the PV and Secrets, run the following steps:
+    1. Edit the file fernet-key with you desired key
+    2. Run the following command:
+        ```bash
+        make setup-prerequisites
+        ```
+        This command will create both secrets and also create a PersisteVolume
+
+### Local Deployment
+
+To deploy Airflow locally, use the following steps:
+
+1. Start Minikube to set up a local Kubernetes cluster:
+
+```bash
+minikube start
+```
+
+2. Configure Minikube to use the Docker daemon inside the Minikube cluster:
+
+```bash
+eval $(minikube docker-env)
+```
+
+3. Build the Airflow Docker image and push it to the local Docker registry:
 
 ```bash
 make build
 make push
 ```
 
-This will build the Airflow Docker image and push it to the remote repository.
-
-### Deploy Airflow Docker image to Kubernetes Cluster
-
-To deploy the Airflow Docker image to a Kubernetes cluster, run the following command:
+4. Install the Airflow Helm chart with the provided values.yaml file:
 
 ```bash
 make deploy
 ```
 
-This command will deploy Airflow using the Kubernetes configuration files and settings provided in the Helm chart. Ensure that you have the necessary permissions and access to the Kubernetes cluster before executing this command.
+5. Monitor the deployment and wait for all Airflow pods to be in a running state:
+
+```bash
+kubectl get pods --namespace airflow --watch
+```
+
+6. Once all the pods are running, you can access the Airflow web UI using the following command:
+
+```bash
+minikube service airflow-web -n airflow
+```
+
+7. Enable and run Airflow DAGs through the web UI, and monitor the job progress.
+
+Remember to clean up the resources after you finish by running:
+
+```bash
+helm uninstall airflow --namespace airflow
+kubectl delete secret airflow-fernet-key --namespace airflow
+kubectl delete secret airflow-gitsync --namespace airflow
+```
+
+These steps will set up and deploy Airflow locally using Minikube and Helm, allowing you to test and run Airflow jobs in a local Kubernetes environment.
