@@ -1,10 +1,10 @@
-ARG AIRFLOW_VERSION="2.5.3"
-ARG PYTHON_VERSION="3.8"
 ARG UBUNTU_VERSION="20.04"
 ARG AIRFLOW_HOME="/opt/airflow"
 
 # Base image
 FROM ubuntu:${UBUNTU_VERSION}
+
+ENV AIRFLOW_USER_HOME_DIR="/home/airflow"
 
 USER root
 
@@ -31,7 +31,6 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt /tmp/requirements.txt
-COPY constraints.txt /tmp/constraints.txt
 
 # Install additional dependencies
 RUN pip install setuptools wheel \
@@ -41,16 +40,20 @@ RUN pip install setuptools wheel \
 RUN python3 -m pip install --upgrade pip
 
 # Install Apache Airflow
-RUN pip install 'apache-airflow==2.5.3' --constraint https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt
+RUN pip install 'apache-airflow==2.5.3' --constraint 'https://raw.githubusercontent.com/apache/airflow/constraints-2.5.3/constraints-3.8.txt'
 
 # Create the airflow user
 RUN useradd -ms /bin/bash airflow
+
+# Set the entrypoint
+COPY entrypoint.sh /entrypoint
+
+# Grant access entrypoint 
+RUN chmod +x /entrypoint
 
 # Set the airflow user
 USER airflow
 
 WORKDIR ${AIRFLOW_HOME}
 
-
-# Set the entrypoint
-ENTRYPOINT ["airflow"]
+ENTRYPOINT ["/usr/bin/dumb-init", "--", "/entrypoint"]

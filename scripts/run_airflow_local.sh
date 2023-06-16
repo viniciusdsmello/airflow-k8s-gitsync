@@ -7,7 +7,7 @@ sudo echo ""
 # minikube update-context
 
 # install airflow
-helm upgrade --install airflow airflow-stable/airflow -f helm/values_new.yaml
+helm upgrade --install airflow helm/airflow -f helm/values.yaml
 
 # forwarding a port from airflow to local port 8000
 RET=1
