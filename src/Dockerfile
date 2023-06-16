@@ -1,10 +1,17 @@
 ARG UBUNTU_VERSION="20.04"
+ARG AIRFLOW_UID="50000"
 ARG AIRFLOW_HOME="/opt/airflow"
+ARG AIRFLOW_USER_HOME_DIR="/home/airflow"
 
 # Base image
 FROM ubuntu:${UBUNTU_VERSION}
 
-ENV AIRFLOW_USER_HOME_DIR="/home/airflow"
+ENV PATH=${PATH}:${AIRFLOW_USER_HOME_DIR}/.local/bin \
+    AIRFLOW_USER_HOME_DIR=${AIRFLOW_USER_HOME_DIR} \
+    AIRFLOW_HOME=${AIRFLOW_HOME} \
+    AIRFLOW_UID=${AIRFLOW_UID} \
+    # By default PIP installs everything to ~/.local
+    PIP_USER="true"
 
 USER root
 
@@ -43,7 +50,9 @@ RUN python3 -m pip install --upgrade pip
 RUN pip install 'apache-airflow==2.5.3' --constraint 'https://raw.githubusercontent.com/apache/airflow/constraints-2.5.3/constraints-3.8.txt'
 
 # Create the airflow user
-RUN useradd -ms /bin/bash airflow
+RUN adduser --gecos "First Last,RoomNumber,WorkPhone,HomePhone" --disabled-password \
+       --quiet "airflow" --uid "${AIRFLOW_UID}" --gid "0" --home "${AIRFLOW_USER_HOME_DIR}" && \
+    mkdir -p ${AIRFLOW_HOME} && chown -R "airflow:0" "${AIRFLOW_USER_HOME_DIR}" ${AIRFLOW_HOME}
 
 # Set the entrypoint
 COPY entrypoint.sh /entrypoint
