@@ -18,4 +18,5 @@ def example():
     data = extract()
     transformed = transform.map(data)
     load(transformed)
-    
+
+example()
