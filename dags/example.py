@@ -20,14 +20,14 @@ def example():
     
     @task
     def transform(x):
-        return x * 2
+        return [x**2 for x in x]
     
     @task
     def load(y):
         print(y)
 
     data = extract()
-    transformed = transform.map(data)
+    transformed = transform(data)
     load(transformed)
 
 example()
