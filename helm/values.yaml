@@ -11,6 +11,10 @@ airflow:
     # change it to your own image
     repository: viniciusdsmello/airflow-k8s
     tag: latest
+    pullPolicy: Always
+    pullSecret:
+    uid: 50000
+    gid: 0
 
   ## the airflow executor type to use
   executor: KubernetesExecutor
