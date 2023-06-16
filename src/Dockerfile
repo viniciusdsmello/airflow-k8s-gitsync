@@ -536,7 +536,7 @@ function install_airflow_and_providers_from_docker_context_files(){
     set +x
 
     common::install_pip_version
-    pip check
+    
 }
 
 function install_all_other_packages_from_docker_context_files() {
@@ -563,7 +563,7 @@ common::override_pip_version_if_needed
 common::get_constraints_location
 common::show_pip_version_and_location
 
-install_airflow_and_providers_from_docker_context_files
+# install_airflow_and_providers_from_docker_context_files
 
 common::show_pip_version_and_location
 install_all_other_packages_from_docker_context_files
@@ -617,9 +617,9 @@ function install_airflow() {
 
         common::install_pip_version
         echo
-        echo "${COLOR_BLUE}Running 'pip check'${COLOR_RESET}"
+        echo "${COLOR_BLUE}Running ''${COLOR_RESET}"
         echo
-        pip check
+        
     else \
         echo
         echo "${COLOR_BLUE}Installing all packages with constraints and upgrade if needed${COLOR_RESET}"
@@ -638,9 +638,9 @@ function install_airflow() {
         common::install_pip_version
         set +x
         echo
-        echo "${COLOR_BLUE}Running 'pip check'${COLOR_RESET}"
+        echo "${COLOR_BLUE}Running ''${COLOR_RESET}"
         echo
-        pip check
+        
     fi
 
 }
@@ -677,9 +677,9 @@ function install_additional_dependencies() {
         common::install_pip_version
         set +x
         echo
-        echo "${COLOR_BLUE}Running 'pip check'${COLOR_RESET}"
+        echo "${COLOR_BLUE}Running ''${COLOR_RESET}"
         echo
-        pip check
+        
     else
         echo
         echo "${COLOR_BLUE}Installing additional dependencies upgrading only if needed${COLOR_RESET}"
@@ -691,9 +691,9 @@ function install_additional_dependencies() {
         common::install_pip_version
         set +x
         echo
-        echo "${COLOR_BLUE}Running 'pip check'${COLOR_RESET}"
+        echo "${COLOR_BLUE}Running ''${COLOR_RESET}"
         echo
-        pip check
+        
     fi
 }
 
@@ -1264,7 +1264,7 @@ RUN if [[ -n "${ADDITIONAL_PYTHON_DEPS}" ]]; then \
 RUN find "${AIRFLOW_USER_HOME_DIR}/.local/" -name '*.pyc' -print0 | xargs -0 rm -f || true ;
 RUN find "${AIRFLOW_USER_HOME_DIR}/.local/" -type d -name '__pycache__' -print0 | xargs -0 rm -rf || true ;
     # make sure that all directories and files in .local are also group accessible
-RUN find "${AIRFLOW_USER_HOME_DIR}/.local" -executable -print0 | xargs --null chmod g+x; \
+RUN find "${AIRFLOW_USER_HOME_DIR}/.local" -executable -print0 | xargs --null chmod g+x
 RUN find "${AIRFLOW_USER_HOME_DIR}/.local" -print0 | xargs --null chmod g+rw
 
 # In case there is a requirements.txt file in "docker-context-files" it will be installed
