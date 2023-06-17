@@ -150,7 +150,7 @@ kubectl create secret generic airflow-gitsync --from-file=user=$PWD/github-user 
 
 Note that you need to create the following files `github-user` and `github-password` before applying the changes.
 
-Finally, execute the following commands to deploy the application to your cluster (make sure you have kubectl context set to production):
+Finally, review all values inside the file `helm/values.yaml` and execute the following commands to deploy the application to your cluster (make sure you have kubectl context set to production):
 
 ```bash
 make deploy

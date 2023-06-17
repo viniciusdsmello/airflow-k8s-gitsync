@@ -43,7 +43,7 @@ airflow:
     AIRFLOW__LOGGING__LOGGING_LEVEL: "INFO"
     
     # Webserver
-    AIRFLOW__WEBSERVER__BASE_URL: "https://airflow-prod.hurb-data.com"
+    AIRFLOW__WEBSERVER__BASE_URL: "your-domain.com"
     AIRFLOW__WEBSERVER__DAG_DEFAULT_VIEW: "grid"
     AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "True"
     AIRFLOW__WEBSERVER__RELOAD_ON_PLUGIN_CHANGE: "True"
@@ -99,7 +99,7 @@ airflow:
 
     # - id: connection_id
     #   type: http
-    #   host: https://datahurb-gms.hurb-data.com
+    #   host: https://endpoint.com
     #   extra: {}
 
   ## a list airflow variables to create
