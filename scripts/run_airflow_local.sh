@@ -1,11 +1,6 @@
 #!/bin/bash
 sudo echo ""
 
-# run minikube
-# minikube start --memory=4000
-# minikube addons enable ingress
-# minikube update-context
-
 # install airflow
 helm upgrade --install airflow helm/airflow -f helm/values.yaml
 

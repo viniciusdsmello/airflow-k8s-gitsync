@@ -1280,6 +1280,16 @@ RUN if [[ -f /docker-context-files/requirements.txt ]]; then \
 ##############################################################################################
 FROM ${UBUNTU_BASE_IMAGE} as main
 
+# Install Python 3.8
+RUN apt-get update && apt-get install -y \
+    python3.8 \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set Python 3.8 as the default python version
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.8 1
+# Set pip 3 as the default pip version
+RUN update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
 
 # Nolog bash flag is currently ignored - but you can replace it with other flags (for example
 # xtrace - to show commands executed)

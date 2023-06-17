@@ -32,8 +32,11 @@ airflow:
   ## environment variables for airflow configs
   ## [FAQ] https://github.com/airflow-helm/charts/blob/main/charts/airflow/docs/faq/configuration/airflow-configs.md
   config:
+
+    ## Core
+    AIRFLOW__CORE__LOAD_EXAMPLES: "True"
+  
     # Database
-    AIRFLOW__DATABASE__LOAD_EXAMPLES: "True"
     AIRFLOW__DATABASE__LOAD_DEFAULT_CONNECTIONS: "True"
 
     ## LOGGING
@@ -435,7 +438,7 @@ ingress:
 
     ## the hostname for the web Ingress
     ##
-    host: "airflow-prod.hurb-data.com"
+    host: "your-domain.com"
 
     ## the Ingress Class for the web Ingress
     ## - [WARNING] requires Kubernetes 1.18 or later, use "kubernetes.io/ingress.class" annotation for older versions
