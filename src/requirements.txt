@@ -1,7 +1,6 @@
 # Apache Airflow Providers
+apache-airflow-providers-apache-spark
 apache-airflow-providers-apache-hdfs
 apache-airflow-providers-apache-hive
 apache-airflow-providers-postgres
 
-# Providers dependencies
-psycopg2-binary

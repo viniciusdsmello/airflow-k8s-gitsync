@@ -35,7 +35,7 @@
 #                        much smaller.
 #
 # Use the same builder frontend version for everyone
-ARG AIRFLOW_EXTRAS="amazon,async,celery,cncf.kubernetes,dask,docker,elasticsearch,ftp,google,google_auth,grpc,hashicorp,http,ldap,microsoft.azure,mysql,odbc,pandas,postgres,redis,sendgrid,sftp,slack,ssh,statsd,virtualenv"
+ARG AIRFLOW_EXTRAS="async,cncf.kubernetes,docker,ldap,postgres,hive,hdfs,spark,krb5"
 ARG ADDITIONAL_AIRFLOW_EXTRAS=""
 ARG ADDITIONAL_PYTHON_DEPS=""
 
@@ -48,10 +48,11 @@ ARG AIRFLOW_VERSION="2.5.3"
 
 ARG PYTHON_BASE_IMAGE="python:3.7-slim-bullseye"
 ARG UBUNTU_BASE_IMAGE="ubuntu:20.04"
+# ARG UBUNTU_BASE_IMAGE="nexus3.xxxxxxx:18096/com/xxxx/group/itid/es/dc/ubuntu/gcr_ubuntu-1804:latest"
+
 
 ARG AIRFLOW_PIP_VERSION=22.3.1
 ARG AIRFLOW_IMAGE_REPOSITORY="https://github.com/apache/airflow"
-ARG AIRFLOW_IMAGE_README_URL="https://raw.githubusercontent.com/apache/airflow/main/docs/docker-stack/README.md"
 
 # By default latest released version of airflow is installed (when empty) but this value can be overridden
 # and we can install version according to specification (For example ==2.0.2 or <3.0.0).
@@ -72,7 +73,7 @@ FROM scratch as scripts
 # make the PROD Dockerfile standalone
 ##############################################################################################
 
-# The content below is automatically copied from scripts/docker/install_os_dependencies.sh
+
 COPY <<"EOF" /install_os_dependencies.sh
 set -euo pipefail
 
@@ -114,15 +115,10 @@ lsb-release netcat openssh-client python3-selinux rsync sasl2-bin sqlite3 sudo u
 }
 
 function install_docker_cli() {
-    local platform
-    if [[ $(uname -m) == "arm64" || $(uname -m) == "aarch64" ]]; then
-        platform="aarch64"
-    else
-        platform="x86_64"
-    fi
-    curl --silent \
-        "https://download.docker.com/linux/static/stable/${platform}/docker-${DOCKER_CLI_VERSION}.tgz" \
-        |  tar -C /usr/bin --strip-components=1 -xvzf - docker/docker
+    # echo "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc) main universe" > /etc/apt/sources.list
+
+    apt-get update
+    # apt-get install docker-ce-cli
 }
 
 function install_debian_dev_dependencies() {
@@ -155,7 +151,6 @@ function install_debian_runtime_dependencies() {
         bash -o pipefail -o errexit -o nounset -o nolog -c "${ADDITIONAL_RUNTIME_APT_COMMAND}"
     fi
     apt-get update
-    # shellcheck disable=SC2086
     apt-get install -y --no-install-recommends ${RUNTIME_APT_DEPS} ${ADDITIONAL_RUNTIME_APT_DEPS}
     apt-get autoremove -yqq --purge
     apt-get clean
@@ -174,112 +169,7 @@ else
 fi
 EOF
 
-# The content below is automatically copied from scripts/docker/install_mysql.sh
-COPY <<"EOF" /install_mysql.sh
-set -euo pipefail
-declare -a packages
 
-MYSQL_VERSION="8.0"
-readonly MYSQL_VERSION
-
-COLOR_BLUE=$'\e[34m'
-readonly COLOR_BLUE
-COLOR_RESET=$'\e[0m'
-readonly COLOR_RESET
-
-: "${INSTALL_MYSQL_CLIENT:?Should be true or false}"
-
-install_mysql_client() {
-    if [[ "${1}" == "dev" ]]; then
-        packages=("libmysqlclient-dev" "mysql-client")
-    elif [[ "${1}" == "prod" ]]; then
-        packages=("libmysqlclient21" "mysql-client")
-    else
-        echo
-        echo "Specify either prod or dev"
-        echo
-        exit 1
-    fi
-
-    echo
-    echo "${COLOR_BLUE}Installing mysql client version ${MYSQL_VERSION}: ${1}${COLOR_RESET}"
-    echo
-
-    local key="467B942D3A79BD29"
-    readonly key
-
-    GNUPGHOME="$(mktemp -d)"
-    export GNUPGHOME
-    set +e
-    for keyserver in $(shuf -e ha.pool.sks-keyservers.net hkp://p80.pool.sks-keyservers.net:80 \
-                               keyserver.ubuntu.com hkp://keyserver.ubuntu.com:80)
-    do
-        gpg --keyserver "${keyserver}" --recv-keys "${key}" 2>&1 && break
-    done
-    set -e
-    gpg --export "${key}" > /etc/apt/trusted.gpg.d/mysql.gpg
-    gpgconf --kill all
-    rm -rf "${GNUPGHOME}"
-    unset GNUPGHOME
-    echo "deb http://repo.mysql.com/apt/ubuntu/ $(lsb_release -cs) mysql-${MYSQL_VERSION}" > /etc/apt/sources.list.d/mysql.list
-    apt-get update
-    apt-get install --no-install-recommends -y "${packages[@]}"
-    apt-get autoremove -yqq --purge
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-}
-
-if [[ $(uname -m) == "arm64" || $(uname -m) == "aarch64" ]]; then
-    # disable MYSQL for ARM64
-    INSTALL_MYSQL_CLIENT="false"
-fi
-
-if [[ ${INSTALL_MYSQL_CLIENT:="true"} == "true" ]]; then
-    install_mysql_client "${@}"
-fi
-EOF
-
-# The content below is automatically copied from scripts/docker/install_mssql.sh
-COPY <<"EOF" /install_mssql.sh
-set -euo pipefail
-
-: "${INSTALL_MSSQL_CLIENT:?Should be true or false}"
-
-COLOR_BLUE=$'\e[34m'
-readonly COLOR_BLUE
-COLOR_RESET=$'\e[0m'
-readonly COLOR_RESET
-
-function install_mssql_client() {
-    # Install MsSQL client from Microsoft repositories
-    if [[ ${INSTALL_MSSQL_CLIENT:="true"} != "true" ]]; then
-        echo
-        echo "${COLOR_BLUE}Skip installing mssql client${COLOR_RESET}"
-        echo
-        return
-    fi
-    echo
-    echo "${COLOR_BLUE}Installing mssql client${COLOR_RESET}"
-    echo
-    local distro
-    local version
-    distro=$(lsb_release -is | tr '[:upper:]' '[:lower:]')
-    version=$(lsb_release -rs)
-    local driver=msodbcsql18
-    curl --silent https://packages.microsoft.com/keys/microsoft.asc | apt-key add - >/dev/null 2>&1
-    curl --silent "https://packages.microsoft.com/config/${distro}/${version}/prod.list" > \
-        /etc/apt/sources.list.d/mssql-release.list
-    apt-get update -yqq
-    apt-get upgrade -yqq
-    ACCEPT_EULA=Y apt-get -yqq install -y --no-install-recommends "${driver}"
-    rm -rf /var/lib/apt/lists/*
-    apt-get autoremove -yqq --purge
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-}
-
-install_mssql_client "${@}"
-EOF
-
-# The content below is automatically copied from scripts/docker/install_postgres.sh
 COPY <<"EOF" /install_postgres.sh
 set -euo pipefail
 declare -a packages
@@ -296,21 +186,8 @@ install_postgres_client() {
     echo "${COLOR_BLUE}Installing postgres client${COLOR_RESET}"
     echo
 
-    if [[ "${1}" == "dev" ]]; then
-        packages=("libpq-dev" "postgresql-client")
-    elif [[ "${1}" == "prod" ]]; then
-        packages=("postgresql-client")
-    else
-        echo
-        echo "Specify either prod or dev"
-        echo
-        exit 1
-    fi
-
-    curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
-    echo "deb https://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
     apt-get update
-    apt-get install --no-install-recommends -y "${packages[@]}"
+    apt-get install -y postgresql
     apt-get autoremove -yqq --purge
     apt-get clean && rm -rf /var/lib/apt/lists/*
 }
@@ -320,7 +197,7 @@ if [[ ${INSTALL_POSTGRES_CLIENT:="true"} == "true" ]]; then
 fi
 EOF
 
-# The content below is automatically copied from scripts/docker/install_pip_version.sh
+
 COPY <<"EOF" /install_pip_version.sh
 . "$( dirname "${BASH_SOURCE[0]}" )/common.sh"
 
@@ -334,53 +211,7 @@ common::show_pip_version_and_location
 common::install_pip_version
 EOF
 
-# The content below is automatically copied from scripts/docker/install_airflow_dependencies_from_branch_tip.sh
-COPY <<"EOF" /install_airflow_dependencies_from_branch_tip.sh
 
-. "$( dirname "${BASH_SOURCE[0]}" )/common.sh"
-
-: "${AIRFLOW_REPO:?Should be set}"
-: "${AIRFLOW_BRANCH:?Should be set}"
-: "${INSTALL_MYSQL_CLIENT:?Should be true or false}"
-: "${INSTALL_POSTGRES_CLIENT:?Should be true or false}"
-: "${AIRFLOW_PIP_VERSION:?Should be set}"
-
-function install_airflow_dependencies_from_branch_tip() {
-    echo
-    echo "${COLOR_BLUE}Installing airflow from ${AIRFLOW_BRANCH}. It is used to cache dependencies${COLOR_RESET}"
-    echo
-    if [[ ${INSTALL_MYSQL_CLIENT} != "true" ]]; then
-       AIRFLOW_EXTRAS=${AIRFLOW_EXTRAS/mysql,}
-    fi
-    if [[ ${INSTALL_POSTGRES_CLIENT} != "true" ]]; then
-       AIRFLOW_EXTRAS=${AIRFLOW_EXTRAS/postgres,}
-    fi
-    # Install latest set of dependencies using constraints. In case constraints were upgraded and there
-    # are conflicts, this might fail, but it should be fixed in the following installation steps
-    set -x
-    pip install --root-user-action ignore \
-      ${ADDITIONAL_PIP_INSTALL_FLAGS} \
-      "https://github.com/${AIRFLOW_REPO}/archive/${AIRFLOW_BRANCH}.tar.gz#egg=apache-airflow[${AIRFLOW_EXTRAS}]" \
-      --constraint "${AIRFLOW_CONSTRAINTS_LOCATION}" || true
-    common::install_pip_version
-    pip freeze | grep apache-airflow-providers | xargs pip uninstall --yes 2>/dev/null || true
-    set +x
-    echo
-    echo "${COLOR_BLUE}Uninstalling just airflow. Dependencies remain. Now target airflow can be reinstalled using mostly cached dependencies${COLOR_RESET}"
-    echo
-    pip uninstall --yes apache-airflow || true
-}
-
-common::get_colors
-common::get_airflow_version_specification
-common::override_pip_version_if_needed
-common::get_constraints_location
-common::show_pip_version_and_location
-
-install_airflow_dependencies_from_branch_tip
-EOF
-
-# The content below is automatically copied from scripts/docker/common.sh
 COPY <<"EOF" /common.sh
 set -euo pipefail
 
@@ -451,7 +282,7 @@ function common::install_pip_version() {
 }
 EOF
 
-# The content below is automatically copied from scripts/docker/pip
+
 COPY <<"EOF" /pip
 #!/usr/bin/env bash
 COLOR_RED=$'\e[31m'
@@ -469,7 +300,7 @@ fi
 exec "${HOME}"/.local/bin/pip "${@}"
 EOF
 
-# The content below is automatically copied from scripts/docker/install_from_docker_context_files.sh
+
 COPY <<"EOF" /install_from_docker_context_files.sh
 
 . "$( dirname "${BASH_SOURCE[0]}" )/common.sh"
@@ -477,9 +308,6 @@ COPY <<"EOF" /install_from_docker_context_files.sh
 : "${AIRFLOW_PIP_VERSION:?Should be set}"
 
 function install_airflow_and_providers_from_docker_context_files(){
-    if [[ ${INSTALL_MYSQL_CLIENT} != "true" ]]; then
-        AIRFLOW_EXTRAS=${AIRFLOW_EXTRAS/mysql,}
-    fi
     if [[ ${INSTALL_POSTGRES_CLIENT} != "true" ]]; then
         AIRFLOW_EXTRAS=${AIRFLOW_EXTRAS/postgres,}
     fi
@@ -569,7 +397,7 @@ common::show_pip_version_and_location
 install_all_other_packages_from_docker_context_files
 EOF
 
-# The content below is automatically copied from scripts/docker/install_airflow.sh
+
 COPY <<"EOF" /install_airflow.sh
 
 . "$( dirname "${BASH_SOURCE[0]}" )/common.sh"
@@ -584,11 +412,6 @@ function install_airflow() {
         echo "${COLOR_RED}ERROR! You can only use --editable flag when installing airflow from sources!${COLOR_RESET}"
         echo "${COLOR_RED}       Current installation method is '${AIRFLOW_INSTALLATION_METHOD} and should be '.'${COLOR_RESET}"
         exit 1
-    fi
-    # Remove mysql from extras if client is not going to be installed
-    if [[ ${INSTALL_MYSQL_CLIENT} != "true" ]]; then
-        AIRFLOW_EXTRAS=${AIRFLOW_EXTRAS/mysql,}
-        echo "${COLOR_YELLOW}MYSQL client installation is disabled. Extra 'mysql' installations were therefore omitted.${COLOR_RESET}"
     fi
     # Remove postgres from extras if client is not going to be installed
     if [[ ${INSTALL_POSTGRES_CLIENT} != "true" ]]; then
@@ -654,7 +477,7 @@ common::show_pip_version_and_location
 install_airflow
 EOF
 
-# The content below is automatically copied from scripts/docker/install_additional_dependencies.sh
+
 COPY <<"EOF" /install_additional_dependencies.sh
 set -euo pipefail
 
@@ -707,7 +530,7 @@ install_additional_dependencies
 EOF
 
 
-# The content below is automatically copied from scripts/docker/entrypoint_prod.sh
+
 COPY <<"EOF" /entrypoint_prod.sh
 #!/usr/bin/env bash
 AIRFLOW_COMMAND="${1:-}"
@@ -791,19 +614,7 @@ function wait_for_connection {
     echo BACKEND="${BACKEND:=${detected_backend}}"
     readonly BACKEND
 
-    if [[ -z "${detected_port=}" ]]; then
-        if [[ ${BACKEND} == "postgres"* ]]; then
-            detected_port=5432
-        elif [[ ${BACKEND} == "mysql"* ]]; then
-            detected_port=3306
-        elif [[ ${BACKEND} == "mssql"* ]]; then
-            detected_port=1433
-        elif [[ ${BACKEND} == "redis"* ]]; then
-            detected_port=6379
-        elif [[ ${BACKEND} == "amqp"* ]]; then
-            detected_port=5672
-        fi
-    fi
+    detected_port=5432
 
     detected_host=${detected_host:="localhost"}
 
@@ -885,17 +696,6 @@ function wait_for_airflow_db() {
 function upgrade_db() {
     # Runs airflow db upgrade
     airflow db upgrade || true
-}
-
-function wait_for_celery_broker() {
-    # Verifies connection to Celery Broker
-    local executor
-    executor="$(airflow config get-value core executor)"
-    if [[ "${executor}" == "CeleryExecutor" ]]; then
-        local connection_url
-        connection_url="$(airflow config get-value celery broker_url)"
-        wait_for_connection "${connection_url}"
-    fi
 }
 
 function exec_to_bash_or_python_command_if_specified() {
@@ -994,15 +794,10 @@ if [[ ${AIRFLOW_COMMAND} == "airflow" ]]; then
    shift
 fi
 
-if [[ ${AIRFLOW_COMMAND} =~ ^(scheduler|celery)$ ]] \
-    && [[ "${CONNECTION_CHECK_MAX_COUNT}" -gt "0" ]]; then
-    wait_for_celery_broker
-fi
-
 exec "airflow" "${@}"
 EOF
 
-# The content below is automatically copied from scripts/docker/clean-logs.sh
+
 COPY <<"EOF" /clean-logs.sh
 #!/usr/bin/env bash
 
@@ -1030,7 +825,7 @@ while true; do
 done
 EOF
 
-# The content below is automatically copied from scripts/docker/airflow-scheduler-autorestart.sh
+
 COPY <<"EOF" /airflow-scheduler-autorestart.sh
 #!/usr/bin/env bash
 
@@ -1051,6 +846,8 @@ EOF
 ##############################################################################################
 # FROM ${PYTHON_BASE_IMAGE} as airflow-build-image
 FROM ${UBUNTU_BASE_IMAGE} as airflow-build-image
+
+# COPY sources.list /etc/apt/sources.list
 
 # Install Python 3.8
 RUN apt-get update && apt-get install -y \
@@ -1088,8 +885,6 @@ ENV DEV_APT_DEPS=${DEV_APT_DEPS} \
 COPY --from=scripts install_os_dependencies.sh /scripts/docker/
 RUN bash /scripts/docker/install_os_dependencies.sh dev
 
-ARG INSTALL_MYSQL_CLIENT="true"
-ARG INSTALL_MSSQL_CLIENT="true"
 ARG INSTALL_POSTGRES_CLIENT="true"
 ARG AIRFLOW_REPO=apache/airflow
 ARG AIRFLOW_BRANCH=main
@@ -1138,18 +933,11 @@ ARG AIRFLOW_HOME
 ARG AIRFLOW_USER_HOME_DIR
 ARG AIRFLOW_UID
 
-ENV INSTALL_MYSQL_CLIENT=${INSTALL_MYSQL_CLIENT} \
-    INSTALL_MSSQL_CLIENT=${INSTALL_MSSQL_CLIENT} \
-    INSTALL_POSTGRES_CLIENT=${INSTALL_POSTGRES_CLIENT}
+ENV INSTALL_POSTGRES_CLIENT=${INSTALL_POSTGRES_CLIENT}
 
-# Only copy mysql/mssql installation scripts for now - so that changing the other
-# scripts which are needed much later will not invalidate the docker layer here
-COPY --from=scripts install_mysql.sh install_mssql.sh install_postgres.sh /scripts/docker/
+COPY --from=scripts install_postgres.sh /scripts/docker/
 
-RUN bash /scripts/docker/install_mysql.sh dev && \
-    bash /scripts/docker/install_mssql.sh && \
-    bash /scripts/docker/install_postgres.sh dev
-ENV PATH=${PATH}:/opt/mssql-tools/bin
+RUN bash /scripts/docker/install_postgres.sh dev
 
 COPY ${DOCKER_CONTEXT_FILES} /docker-context-files
 
@@ -1200,8 +988,7 @@ ENV AIRFLOW_PIP_VERSION=${AIRFLOW_PIP_VERSION} \
 
 # Copy all scripts required for installation - changing any of those should lead to
 # rebuilding from here
-COPY --from=scripts common.sh install_pip_version.sh \
-     install_airflow_dependencies_from_branch_tip.sh /scripts/docker/
+COPY --from=scripts common.sh install_pip_version.sh /scripts/docker/
 
 # We can set this value to true in case we want to install .whl/.tar.gz packages placed in the
 # docker-context-files folder. This can be done for both additional packages you want to install
@@ -1216,12 +1003,7 @@ ARG INSTALL_PACKAGES_FROM_CONTEXT="false"
 # the cache is only used when "upgrade to newer dependencies" is not set to automatically
 # account for removed dependencies (we do not install them in the first place) and in case
 # INSTALL_PACKAGES_FROM_CONTEXT is not set (because then caching it from main makes no sense).
-RUN bash /scripts/docker/install_pip_version.sh; \
-    if [[ ${AIRFLOW_PRE_CACHED_PIP_PACKAGES} == "true" && \
-        ${INSTALL_PACKAGES_FROM_CONTEXT} == "false" && \
-        ${UPGRADE_TO_NEWER_DEPENDENCIES} == "false" ]]; then \
-        bash /scripts/docker/install_airflow_dependencies_from_branch_tip.sh; \
-    fi
+RUN bash /scripts/docker/install_pip_version.sh;
 
 COPY --chown=airflow:0 ${AIRFLOW_SOURCES_FROM} ${AIRFLOW_SOURCES_TO}
 
@@ -1279,6 +1061,10 @@ RUN if [[ -f /docker-context-files/requirements.txt ]]; then \
 # installed Airflow and all it's dependencies from the build image to make it smaller.
 ##############################################################################################
 FROM ${UBUNTU_BASE_IMAGE} as main
+
+# COPY sources.list /etc/apt/sources.list
+COPY pip.conf /etc/pip.conf
+COPY pip-constraints.txt /usr/local/share/pip-constraints.txt
 
 # Install Python 3.8
 RUN apt-get update && apt-get install -y \
@@ -1345,16 +1131,12 @@ ENV PATH="${AIRFLOW_USER_HOME_DIR}/.local/bin:${PATH}" \
     AIRFLOW_USER_HOME_DIR=${AIRFLOW_USER_HOME_DIR} \
     AIRFLOW_HOME=${AIRFLOW_HOME}
 
-# Only copy mysql/mssql installation scripts for now - so that changing the other
-# scripts which are needed much later will not invalidate the docker layer here.
-COPY --from=scripts install_mysql.sh install_mssql.sh install_postgres.sh /scripts/docker/
+COPY --from=scripts install_postgres.sh /scripts/docker/
 # We run scripts with bash here to make sure we can execute the scripts. Changing to +x might have an
 # unexpected result - the cache for Dockerfiles might get invalidated in case the host system
 # had different umask set and group x bit was not set. In Azure the bit might be not set at all.
 # That also protects against AUFS Docker backend problem where changing the executable bit required sync
-RUN bash /scripts/docker/install_mysql.sh prod \
-    && bash /scripts/docker/install_mssql.sh \
-    && bash /scripts/docker/install_postgres.sh prod \
+RUN bash /scripts/docker/install_postgres.sh prod \
     && adduser --gecos "First Last,RoomNumber,WorkPhone,HomePhone" --disabled-password \
            --quiet "airflow" --uid "${AIRFLOW_UID}" --gid "0" --home "${AIRFLOW_USER_HOME_DIR}" \
 # Make Airflow files belong to the root group and are accessible. This is to accommodate the guidelines from
@@ -1418,25 +1200,5 @@ ARG AIRFLOW_IMAGE_DATE_CREATED
 
 ENV BUILD_ID=${BUILD_ID} COMMIT_SHA=${COMMIT_SHA}
 
-LABEL org.apache.airflow.distro="ubuntu" \
-  org.apache.airflow.module="airflow" \
-  org.apache.airflow.component="airflow" \
-  org.apache.airflow.image="airflow" \
-  org.apache.airflow.version="${AIRFLOW_VERSION}" \
-  org.apache.airflow.uid="${AIRFLOW_UID}" \
-  org.apache.airflow.main-image.build-id="${BUILD_ID}" \
-  org.apache.airflow.main-image.commit-sha="${COMMIT_SHA}" \
-  org.opencontainers.image.source="${AIRFLOW_IMAGE_REPOSITORY}" \
-  org.opencontainers.image.created=${AIRFLOW_IMAGE_DATE_CREATED} \
-  org.opencontainers.image.authors="dev@airflow.apache.org" \
-  org.opencontainers.image.url="https://airflow.apache.org" \
-  org.opencontainers.image.documentation="https://airflow.apache.org/docs/docker-stack/index.html" \
-  org.opencontainers.image.version="${AIRFLOW_VERSION}" \
-  org.opencontainers.image.revision="${COMMIT_SHA}" \
-  org.opencontainers.image.vendor="Apache Software Foundation" \
-  org.opencontainers.image.licenses="Apache-2.0" \
-  org.opencontainers.image.ref.name="airflow" \
-  org.opencontainers.image.title="Production Airflow Image" \
-  org.opencontainers.image.description="Reference, production-ready Apache Airflow image"
 ENTRYPOINT ["/usr/bin/dumb-init", "--", "/entrypoint"]
 CMD []

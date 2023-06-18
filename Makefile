@@ -6,6 +6,7 @@ NAMESPACE = "default"
 start-minikube:
 	minikube start --cpus 4 --memory 7859
 	minikube addons enable ingress
+	minikube addons enable ingress-dns
 	minikube update-context
 
 stop-minikube:
@@ -24,15 +25,25 @@ push:
 	@echo "Pushing $(IMAGE_NAME):$(VERSION)..."
 	docker push $(IMAGE_NAME):$(VERSION)
 
-deploy:
+deploy-prod:
 	@echo "Deploying $(IMAGE_NAME):$(VERSION) to Kubernetes..."
 	helm upgrade --install --namespace $(NAMESPACE) $(SERVICE_NAME) helm/airflow/ -f helm/values.yaml --set airflow.image.repository=$(IMAGE_NAME) --set airflow.image.tag=$(VERSION)
-	
+
+deploy-local:
+	@echo "Deploying $(IMAGE_NAME):$(VERSION) to Kubernetes..."
+	helm upgrade --install --namespace $(NAMESPACE) $(SERVICE_NAME) helm/airflow/ -f helm/values_local.yaml --set airflow.image.repository=$(IMAGE_NAME) --set airflow.image.tag=$(VERSION)
+
+dry-run-prod:
+	@echo "Dry running $(IMAGE_NAME):$(VERSION) to Kubernetes..."
+	helm upgrade --install --namespace $(NAMESPACE) $(SERVICE_NAME) helm/airflow/ -f helm/values.yaml --set airflow.image.repository=$(IMAGE_NAME) --set airflow.image.tag=$(VERSION) --dry-run	
+
+dry-run-local:
+	@echo "Dry running $(IMAGE_NAME):$(VERSION) to Kubernetes..."
+	helm upgrade --install --namespace $(NAMESPACE) $(SERVICE_NAME) helm/airflow/ -f helm/values_local.yaml --set airflow.image.repository=$(IMAGE_NAME) --set airflow.image.tag=$(VERSION) --dry-run	
+
 cleanup:
 	@echo "Cleaning up airflow deployment and persistent volume..."
 	helm delete airflow || exit 0;
 	kubectl delete secret airflow-fernet-key
 	kubectl delete secret airflow-gitsync
 	kubectl delete pv airflow-logs-pv
-
-reinstall: cleanup deploy
