@@ -41,6 +41,14 @@ dry-run-local:
 	@echo "Dry running $(IMAGE_NAME):$(VERSION) to Kubernetes..."
 	helm upgrade --install --namespace $(NAMESPACE) $(SERVICE_NAME) helm/airflow/ -f helm/values_local.yaml --set airflow.image.repository=$(IMAGE_NAME) --set airflow.image.tag=$(VERSION) --dry-run	
 
+generate-yaml-prod:
+	@echo "Generating yaml files..."
+	helm template --namespace $(NAMESPACE) $(SERVICE_NAME) helm/airflow/ -f helm/values.yaml --set airflow.image.repository=$(IMAGE_NAME) --set airflow.image.tag=$(VERSION) > airflow_prod.yaml
+
+generate-yaml-local:
+	@echo "Generating yaml files..."
+	helm template --namespace $(NAMESPACE) $(SERVICE_NAME) helm/airflow/ -f helm/values_local.yaml --set airflow.image.repository=$(IMAGE_NAME) --set airflow.image.tag=$(VERSION) > airflow_local.yaml
+
 cleanup:
 	@echo "Cleaning up airflow deployment and persistent volume..."
 	helm delete airflow || exit 0;

@@ -261,6 +261,8 @@ function common::get_constraints_location() {
         python_version="$(python --version 2>/dev/stdout | cut -d " " -f 2 | cut -d "." -f 1-2)"
         AIRFLOW_CONSTRAINTS_LOCATION="${constraints_base}/${AIRFLOW_CONSTRAINTS_MODE}-${python_version}.txt"
     fi
+
+    # AIRFLOW_CONSTRAINTS_LOCATION="/usr/local/share/pip-constraints.txt"
 }
 
 function common::show_pip_version_and_location() {
