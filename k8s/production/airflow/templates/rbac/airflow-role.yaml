@@ -1,0 +1,44 @@
+---
+# Source: airflow/templates/rbac/airflow-role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: airflow
+  labels:
+    app: airflow
+    chart: airflow-8.7.1
+    release: airflow
+    heritage: Helm
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - "get"
+  - "list"
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - "create"
+  - "get"
+  - "delete"
+  - "list"
+  - "patch"
+  - "watch"
+- apiGroups:
+  - ""
+  resources:
+  - "pods/log"
+  verbs:
+  - "get"
+  - "list"
+- apiGroups:
+  - ""
+  resources:
+  - "pods/exec"
+  verbs:
+  - "create"
+  - "get"
