@@ -31,26 +31,6 @@
   {{ end }}
 {{- end }}
 
-{{/* Checks for `airflow.executor` */}}
-{{- if not (has .Values.airflow.executor (list "CeleryExecutor" "CeleryKubernetesExecutor" "KubernetesExecutor")) }}
-  {{ required "The `airflow.executor` must be one of: [CeleryExecutor, CeleryKubernetesExecutor, KubernetesExecutor]!" nil }}
-{{- end }}
-{{- if eq .Values.airflow.executor "CeleryExecutor" }}
-  {{- if not .Values.workers.enabled }}
-  {{ required "If `airflow.executor=CeleryExecutor`, then `workers.enabled` should be `true`!" nil }}
-  {{- end }}
-{{- end }}
-{{- if eq .Values.airflow.executor "CeleryKubernetesExecutor" }}
-  {{- if not .Values.workers.enabled }}
-  {{ required "If `airflow.executor=CeleryKubernetesExecutor`, then `workers.enabled` should be `true`!" nil }}
-  {{- end }}
-{{- end }}
-{{- if eq .Values.airflow.executor "KubernetesExecutor" }}
-  {{- if or (.Values.workers.enabled) (.Values.flower.enabled) (.Values.redis.enabled) }}
-  {{ required "If `airflow.executor=KubernetesExecutor`, then all of [`workers.enabled`, `flower.enabled`, `redis.enabled`] should be `false`!" nil }}
-  {{- end }}
-{{- end }}
-
 {{/* Checks for `airflow.config` */}}
 {{- if .Values.airflow.config.AIRFLOW__CORE__EXECUTOR }}
   {{ required "Don't define `airflow.config.AIRFLOW__CORE__EXECUTOR`, it will be automatically set from `airflow.executor`!" nil }}
@@ -81,21 +61,6 @@
   {{- end }}
   {{- if include "airflow.scheduler.extraVolumeMounts.has_log_path" . }}
   {{ required "If `logs.path` is under any `scheduler.extraVolumeMounts`, then `scheduler.logCleanup.enabled` must be `false`!" nil }}
-  {{- end }}
-{{- end }}
-
-{{/* Checks for `workers.logCleanup` */}}
-{{- if .Values.workers.enabled }}
-  {{- if .Values.workers.logCleanup.enabled }}
-    {{- if .Values.logs.persistence.enabled }}
-    {{ required "If `logs.persistence.enabled=true`, then `workers.logCleanup.enabled` must be `false`!" nil }}
-    {{- end }}
-    {{- if include "airflow.extraVolumeMounts.has_log_path" . }}
-    {{ required "If `logs.path` is under any `airflow.extraVolumeMounts`, then `workers.logCleanup.enabled` must be `false`!" nil }}
-    {{- end }}
-    {{- if include "airflow.workers.extraVolumeMounts.has_log_path" . }}
-    {{ required "If `logs.path` is under any `workers.extraVolumeMounts`, then `workers.logCleanup.enabled` must be `false`!" nil }}
-    {{- end }}
   {{- end }}
 {{- end }}
 
@@ -208,16 +173,6 @@
     {{- end }}
     {{- if not (has .Values.externalDatabase.type (list "mysql" "postgres")) }}
     {{ required "The `externalDatabase.type` must be one of: [mysql, postgres]!" nil }}
-    {{- end }}
-  {{- end }}
-{{- end }}
-
-{{/* Checks for `externalRedis` */}}
-{{- if .Values.externalRedis.host }}
-  {{/* check if they are using externalRedis (the default value for `externalRedis.host` is "localhost") */}}
-  {{- if not (eq .Values.externalRedis.host "localhost") }}
-    {{- if .Values.redis.enabled }}
-    {{ required "If `externalRedis.host` is set, then `redis.enabled` should be `false`!" nil }}
     {{- end }}
   {{- end }}
 {{- end }}

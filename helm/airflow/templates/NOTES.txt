@@ -17,11 +17,6 @@
 {{- if include "airflow.extraVolumeMounts.has_log_path" . }}
 {{- $extra_volumes_worker_logs = true }}
 {{- end }}
-{{- if .Values.workers.enabled }}
-  {{- if include "airflow._has_logs_path" (dict "Values" .Values "volume_mounts" .Values.workers.extraVolumeMounts) }}
-  {{- $extra_volumes_worker_logs = true }}
-  {{- end }}
-{{- end }}
 {{- if and (include "airflow.executor.kubernetes_like" .) (not .Values.airflow.kubernetesPodTemplate.stringOverride) }}
   {{- if include "airflow._has_logs_path" (dict "Values" .Values "volume_mounts" .Values.airflow.kubernetesPodTemplate.extraVolumeMounts) }}
   {{- $extra_volumes_worker_logs = true }}
@@ -71,15 +66,6 @@
   {{- end }}
 {{- end }}
 
-{{- /* if we show the external redis password warning */ -}}
-{{- $external_redis_password_warning := false }}
-{{- if and (not .Values.redis.enabled) (not .Values.externalRedis.passwordSecret) }}
-  {{- /* don't show a warning if the password is empty */ -}}
-  {{- if .Values.externalRedis.password }}
-  {{- $external_redis_password_warning = true }}
-  {{- end }}
-{{- end }}
-
 {{- /* if we show the extraPipPackages warning */ -}}
 {{- $extra_pip_warning := false }}
 {{- if .Values.airflow.extraPipPackages }}
@@ -89,10 +75,6 @@
 {{- else if .Values.scheduler.extraPipPackages }}
 {{- $extra_pip_warning = true }}
 {{- else if .Values.web.extraPipPackages }}
-{{- $extra_pip_warning = true }}
-{{- else if .Values.workers.extraPipPackages }}
-{{- $extra_pip_warning = true }}
-{{- else if .Values.flower.extraPipPackages }}
 {{- $extra_pip_warning = true }}
 {{- end }}
 
@@ -149,9 +131,6 @@ It looks like you have NOT exposed the Airflow Webserver, do this by:
 {{- if .Values.ingress.enabled }}
 Your Kubernetes Ingress endpoint URLs:
   * Airflow Webserver:  http{{ if .Values.ingress.web.tls.enabled }}s{{ end }}://{{ .Values.ingress.web.host }}{{ .Values.ingress.web.path }}/
-{{- if .Values.flower.enabled }}
-  * Flower Dashboard:   http{{ if .Values.ingress.flower.tls.enabled }}s{{ end }}://{{ .Values.ingress.flower.host }}{{ .Values.ingress.flower.path }}/
-{{- end }}
 {{ end }}
 
 {{- if eq .Values.web.service.type "LoadBalancer" }}
@@ -171,9 +150,6 @@ You deployed a "NodePort" type Service for the Airflow Webserver:
 {{- if true }}
 Use these commands to port-forward the Services to your localhost:
   * Airflow Webserver:  kubectl port-forward svc/{{ include "airflow.fullname" . }}-web 8080:8080 --namespace {{ .Release.Namespace }}
-{{- if .Values.flower.enabled }}
-  * Flower Dashboard:   kubectl port-forward svc/{{ include "airflow.fullname" . }}-flower 5555:5555 --namespace {{ .Release.Namespace }}
-{{- end }}
 {{ end }}
 
 {{- if or ($fernet_key_warning) ($web_secret_warning) ($extra_pip_warning) ($embedded_postgres_warning) ($known_host_warning) }}
@@ -193,11 +169,6 @@ Use these commands to port-forward the Services to your localhost:
 {{- if $external_database_password_warning }}
 [CRITICAL] external database password is set using plain-text value!
   * HELP: create a Kubernetes secret with your database password and configure `externalDatabase.passwordSecret`
-{{ end }}
-
-{{- if $external_redis_password_warning }}
-[CRITICAL] external redis password is set using plain-text value!
-  * HELP: create a Kubernetes secret with your redis password and configure `externalRedis.passwordSecret`
 {{ end }}
 
 {{- if $extra_pip_warning }}

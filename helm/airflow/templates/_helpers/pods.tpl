@@ -535,33 +535,6 @@ EXAMPLE USAGE: {{ include "airflow.env" (dict "Release" .Release "Values" .Value
 {{- end }}
 {{- end }}
 
-{{- /* set REDIS_PASSWORD */ -}}
-{{- if .Values.redis.enabled }}
-{{- if .Values.redis.existingSecret }}
-- name: REDIS_PASSWORD
-  valueFrom:
-    secretKeyRef:
-      name: {{ .Values.redis.existingSecret }}
-      key: {{ .Values.redis.existingSecretPasswordKey }}
-{{- else }}
-- name: REDIS_PASSWORD
-  valueFrom:
-    secretKeyRef:
-      name: {{ include "airflow.redis.fullname" . }}
-      key: redis-password
-{{- end }}
-{{- else }}
-{{- if .Values.externalRedis.passwordSecret }}
-- name: REDIS_PASSWORD
-  valueFrom:
-    secretKeyRef:
-      name: {{ .Values.externalRedis.passwordSecret }}
-      key: {{ .Values.externalRedis.passwordSecretKey }}
-{{- else }}
-{{- /* in this case, REDIS_PASSWORD is set in the `-config-envs` Secret */ -}}
-{{- end }}
-{{- end }}
-
 {{- /* disable the `/entrypoint` db connection check */ -}}
 {{- if not .Values.airflow.legacyCommands }}
 - name: CONNECTION_CHECK_MAX_COUNT
@@ -570,15 +543,6 @@ EXAMPLE USAGE: {{ include "airflow.env" (dict "Release" .Release "Values" .Value
   {{- else }}
   value: "0"
   {{- end }}
-{{- end }}
-
-{{- /* set AIRFLOW__CELERY__FLOWER_BASIC_AUTH */ -}}
-{{- if .Values.flower.basicAuthSecret }}
-- name: AIRFLOW__CELERY__FLOWER_BASIC_AUTH
-  valueFrom:
-    secretKeyRef:
-      name: {{ .Values.flower.basicAuthSecret }}
-      key: {{ .Values.flower.basicAuthSecretKey }}
 {{- end }}
 
 {{- /* user-defined environment variables */ -}}

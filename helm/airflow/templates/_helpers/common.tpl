@@ -117,13 +117,6 @@ If `logs.path` is stored under any of the `scheduler.extraVolumeMounts` mounts.
 {{- end -}}
 
 {{/*
-If `logs.path` is stored under any of the `workers.extraVolumeMounts` mounts.
-*/}}
-{{- define "airflow.workers.extraVolumeMounts.has_log_path" -}}
-{{- include "airflow._has_logs_path" (dict "Values" .Values "volume_mounts" .Values.workers.extraVolumeMounts) -}}
-{{- end -}}
-
-{{/*
 If the airflow triggerer should be used.
 */}}
 {{- define "airflow.triggerer.should_use" -}}
@@ -160,23 +153,6 @@ Used to discover the Service and Secret name created by the sub-chart.
 {{- .Values.postgresql.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
 {{- $name := default "postgresql" .Values.postgresql.nameOverride -}}
-{{- if contains $name .Release.Name -}}
-{{- .Release.Name | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
-Construct the `redis.fullname` of the redis sub-chat chart.
-Used to discover the master Service and Secret name created by the sub-chart.
-*/}}
-{{- define "airflow.redis.fullname" -}}
-{{- if .Values.redis.fullnameOverride -}}
-{{- .Values.redis.fullnameOverride | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- $name := default "redis" .Values.redis.nameOverride -}}
 {{- if contains $name .Release.Name -}}
 {{- .Release.Name | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
