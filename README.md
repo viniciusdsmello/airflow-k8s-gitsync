@@ -8,9 +8,14 @@ This repository contains the necessary steps and configurations to deploy Airflo
 
 ```
 |-- dags/
-|-- docs/
 |-- helm/
-    |-- values.yaml: 
+    |-- airflow/
+        |-- files/
+            |-- webserver_config.py: Airflow Webserver's config file
+        |-- templates/
+    |-- pv.yaml: PersistentVolume definition
+    |-- values.yaml: Contains all values used to deploy to production 
+    |-- values_local.yaml: Contains all values used to deploy to local environment, i.e., postgres/pgbouncer
 |-- scripts/
     |-- install_k8s_secrets.sh
     |-- install_local_dependencies.sh
@@ -24,13 +29,12 @@ This repository contains the necessary steps and configurations to deploy Airflo
 The project structure consists of the following directories:
 
 - dags/: Contains the Airflow DAGs (Directed Acyclic Graphs) that define the workflows and tasks.
-- docs/: Contains documentation related to the project.
 - helm/: Includes the Helm chart configuration files, such as values.yaml, which holds the configuration values for Airflow deployment.
 - scripts/: Contains various scripts for installing Kubernetes secrets, local dependencies, and running Airflow locally.
 - src/: Holds the Dockerfile and requirements.txt file necessary for building the Airflow Docker image.
 - Makefile: Provides convenience commands for building and running the project.
 
-## Setup Locally
+## Setup
 
 ### Prerequisites
 
@@ -55,9 +59,9 @@ In order to set up the PV and Secrets, run the following steps:
 
 1. Edit the file `fernet-key` with you desired key
 
-### Local Deployment
+### Build Docker Image
 
-To deploy Airflow locally, use the following steps:
+To build Airflow image, use the following steps:
 
 1. Build the Airflow Docker image and push it to the local Docker registry:
 
@@ -66,34 +70,36 @@ To deploy Airflow locally, use the following steps:
     make push
     ```
 
-2. Start Minikube, create the PersistentVolume and Secrets, then deploy airflow:
+### Local Deployment
+
+To deploy Airflow locally, use the following steps:
+
+1. Start Minikube, create the PersistentVolume and Secrets, then deploy airflow:
 
     ```bash
     minikube start
     make setup-k8s-prerequisites
-    make deploy
+    make deploy-local
     ```
 
-3. Monitor the deployment and wait for all Airflow pods to be in a running state:
+1. Monitor the deployment and wait for all Airflow pods to be in a running state:
 
     ```bash
     kubectl get pods --watch
     ```
 
-4. Once all the pods are running, you can access the Airflow web UI using the following command:
+1. Once all the pods are running, you can access the Airflow web UI using the following command:
 
     ```bash
-    minikube service airflow-web
+    kubectl port-forward svc/airflow-web 8080:8080
     ```
 
-5. Enable and run Airflow DAGs through the web UI, and monitor the job progress.
+1. Enable and run Airflow DAGs through the web UI, and monitor the job progress.
 
 Remember to clean up the resources after you finish by running:
 
 ```bash
-helm uninstall airflow
-kubectl delete secret airflow-fernet-key
-kubectl delete secret airflow-gitsync
+make cleanup
 ```
 
 These steps will set up and deploy Airflow locally using Minikube and Helm, allowing you to test and run Airflow jobs in a local Kubernetes environment.
@@ -153,7 +159,7 @@ Note that you need to create the following files `github-user` and `github-passw
 Finally, review all values inside the file `helm/values.yaml` and execute the following commands to deploy the application to your cluster (make sure you have kubectl context set to production):
 
 ```bash
-make deploy
+make deploy-prod
 ```
 
 ## References
