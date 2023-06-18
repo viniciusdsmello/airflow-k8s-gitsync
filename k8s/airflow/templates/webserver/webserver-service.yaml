@@ -1,0 +1,24 @@
+---
+# Source: airflow/templates/webserver/webserver-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-web
+  labels:
+    app: airflow
+    component: web
+    chart: airflow-8.7.1
+    release: airflow
+    heritage: Helm
+spec:
+  type: ClusterIP
+  selector:
+    app: airflow
+    component: web
+    release: airflow
+  sessionAffinity: None
+  ports:
+    - name: web
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
