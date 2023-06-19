@@ -15,7 +15,9 @@ stop-minikube:
 setup-k8s-prerequisites:
 	@echo "Setting up prerequisites..."
 	kubectl apply -f helm/pv.yaml
-	sh scripts/install_k8s_secrets.sh
+	kubectl create secret generic airflow-fernet-key --from-file=fernet-key=$PWD/fernet-key
+	kubectl create secret generic airflow-gitsync --from-file=id_rsa=$HOME/.ssh/id_rsa
+	kubectl create secret generic airflow-postgres --from-file=postgres-user=$PWD/postgres-user --from-file=postgres-password=$PWD/postgres-password
 
 build:
 	@echo "Building $(IMAGE_NAME):$(VERSION)..."
