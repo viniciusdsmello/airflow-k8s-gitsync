@@ -60,7 +60,7 @@ ARG AIRFLOW_VERSION_SPECIFICATION=""
 
 # By default PIP has progress bar but you can disable it.
 ARG PIP_PROGRESS_BAR="on"
-
+ARG INSTALLATION_TYPE="RUNTIME"
 ##############################################################################################
 # This is the script image where we keep all inlined bash scripts needed in other segments
 ##############################################################################################
@@ -849,7 +849,7 @@ EOF
 # FROM ${PYTHON_BASE_IMAGE} as airflow-build-image
 FROM ${UBUNTU_BASE_IMAGE} as airflow-build-image
 
-# COPY sources.list /etc/apt/sources.list
+COPY sources.list /etc/apt/sources.list
 
 # Install Python 3.8
 RUN apt-get update && apt-get install -y \
@@ -1064,7 +1064,7 @@ RUN if [[ -f /docker-context-files/requirements.txt ]]; then \
 ##############################################################################################
 FROM ${UBUNTU_BASE_IMAGE} as main
 
-# COPY sources.list /etc/apt/sources.list
+COPY sources.list /etc/apt/sources.list
 COPY pip.conf /etc/pip.conf
 COPY pip-constraints.txt /usr/local/share/pip-constraints.txt
 

@@ -147,12 +147,12 @@ scheduler:
   ## resource requests/limits for the scheduler Pods
   ## [SPEC] https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#resourcerequirements-v1-core
   resources:
-    requests:
-      cpu: "1000m"
-      memory: "1Gi"
-    limits:
-      cpu: "4000m"
-      memory: "1.5Gi"
+    # requests:
+    #   cpu: "1000m"
+    #   memory: "1Gi"
+    # limits:
+    #   cpu: "4000m"
+    #   memory: "1.5Gi"
 
   ## configs for the log-cleanup sidecar of the scheduler
   ## [FAQ] https://github.com/airflow-helm/charts/blob/main/charts/airflow/docs/faq/monitoring/log-cleanup.md
@@ -182,17 +182,42 @@ web:
   ## resource requests/limits for the web Pods
   ## [SPEC] https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#resourcerequirements-v1-core
   resources:
-    requests:
-      cpu: "500m"
-      memory: "1Gi"
-    limits:
-      cpu: "1500m"
-      memory: "3Gi"
+    # requests:
+    #   cpu: "500m"
+    #   memory: "1Gi"
+    # limits:
+    #   cpu: "1500m"
+    #   memory: "3Gi"
 
   ## configs for the Service of the web Pods
   service:
+    annotations: {}
+    sessionAffinity: "None"
+    sessionAffinityConfig: {}
     type: ClusterIP
     externalPort: 8080
+    loadBalancerIP: ""
+    loadBalancerSourceRanges: []
+    nodePort:
+      http: ""
+
+  ## configs for the web Pods' readiness probe
+  ##
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    timeoutSeconds: 20
+    failureThreshold: 6
+
+  ## configs for the web Pods' liveness probe
+  ##
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    timeoutSeconds: 20
+    failureThreshold: 6
 
   ## configs generating the `webserver_config.py` file
   ## [FAQ] https://github.com/airflow-helm/charts/blob/main/charts/airflow/docs/faq/configuration/airflow-configs.md#webserver_configpy
@@ -351,13 +376,14 @@ dags:
     ##   https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#resourcerequirements-v1-core
     ##
     resources:
-      requests:
-        cpu: "100m"
-        memory: "128Mi"
-      limits:
-        cpu: "200m"
-        memory: "256Mi"
+      # requests:
+      #   cpu: "100m"
+      #   memory: "128Mi"
+      # limits:
+      #   cpu: "200m"
+      #   memory: "256Mi"
   
+
 
 ###################################
 ## CONFIG | Kubernetes Ingress
@@ -477,6 +503,37 @@ serviceAccount:
 extraManifests: []
 
 ###################################
+## DATABASE | PgBouncer
+###################################
+pgbouncer:
+  ## if the pgbouncer Deployment is created
+  ## [FAQ] https://github.com/airflow-helm/charts/blob/main/charts/airflow/docs/faq/database/pgbouncer.md
+  enabled: true
+
+  ## resource requests/limits for the pgbouncer Pods
+  ## [SPEC] https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#resourcerequirements-v1-core
+  resources: {}
+
+  ## sets pgbouncer config: `auth_type`
+  authType: md5
+
+###################################
+## DATABASE | Embedded Postgres
+###################################
+postgresql:
+  ## if the `stable/postgresql` chart is used
+  ## [FAQ] https://github.com/airflow-helm/charts/blob/main/charts/airflow/docs/faq/database/embedded-database.md
+  ## [WARNING] the embedded Postgres is NOT SUITABLE for production deployments of Airflow
+  ## [WARNING] consider using an external database with `externalDatabase.*`
+  enabled: true
+
+  ## configs for the PVC of postgresql
+  persistence:
+    enabled: true
+    storageClass: ""
+    size: 8Gi
+
+###################################
 ## DATABASE | External Database
 ###################################
 externalDatabase:
@@ -487,24 +544,24 @@ externalDatabase:
 
   ## the host of the external database
   ##
-  host: # abc.systems.uk.com
+  host: 
 
   ## the port of the external database
   ##
-  port: 25011
+  port: 5432
 
   ## the database/scheme to use within the external database
   ##
-  database: airflow_db
+  database: airflow2
 
   ## the username for the external database
   ##
-  user: 
+  user: airflow
 
   ## the name of a pre-created secret containing the external database user
   ## - if set, this overrides `externalDatabase.user`
   ##
-  userSecret: "airflow-postgres"
+  userSecret: ""
 
   ## the key within `externalDatabase.userSecret` containing the user string
   ##

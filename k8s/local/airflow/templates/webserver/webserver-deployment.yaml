@@ -206,8 +206,8 @@ spec:
             - "exec airflow webserver"
           livenessProbe:
             initialDelaySeconds: 10
-            periodSeconds: 10
-            timeoutSeconds: 5
+            periodSeconds: 30
+            timeoutSeconds: 20
             failureThreshold: 6
             httpGet:
               scheme: HTTP
@@ -215,8 +215,8 @@ spec:
               port: web
           readinessProbe:
             initialDelaySeconds: 10
-            periodSeconds: 10
-            timeoutSeconds: 5
+            periodSeconds: 30
+            timeoutSeconds: 20
             failureThreshold: 6
             httpGet:
               scheme: HTTP
