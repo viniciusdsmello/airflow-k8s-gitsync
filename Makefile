@@ -33,7 +33,7 @@ deploy-prod:
 
 deploy-local:
 	@echo "Deploying $(IMAGE_NAME):$(VERSION) to Kubernetes..."
-	helm upgrade --install --namespace $(NAMESPACE) $(SERVICE_NAME) helm/airflow/ -f helm/values_local.yaml --set airflow.image.repository=$(IMAGE_NAME) --set airflow.image.tag=$(VERSION)
+	helm upgrade --install --namespace $(NAMESPACE) $(SERVICE_NAME) helm/airflow/ -f helm/values.yaml --set airflow.image.repository=$(IMAGE_NAME) --set airflow.image.tag=$(VERSION)
 
 dry-run-prod:
 	@echo "Dry running $(IMAGE_NAME):$(VERSION) to Kubernetes..."
@@ -41,7 +41,7 @@ dry-run-prod:
 
 dry-run-local:
 	@echo "Dry running $(IMAGE_NAME):$(VERSION) to Kubernetes..."
-	helm upgrade --install --namespace $(NAMESPACE) $(SERVICE_NAME) helm/airflow/ -f helm/values_local.yaml --set airflow.image.repository=$(IMAGE_NAME) --set airflow.image.tag=$(VERSION) --dry-run	
+	helm upgrade --install --namespace $(NAMESPACE) $(SERVICE_NAME) helm/airflow/ -f helm/values.yaml --set airflow.image.repository=$(IMAGE_NAME) --set airflow.image.tag=$(VERSION) --dry-run	
 
 generate-yaml-prod:
 	@echo "Generating yaml files..."
@@ -49,7 +49,7 @@ generate-yaml-prod:
 
 generate-yaml-local:
 	@echo "Generating yaml files..."
-	helm template --namespace $(NAMESPACE) $(SERVICE_NAME) helm/airflow/ -f helm/values_local.yaml --set airflow.image.repository=$(IMAGE_NAME) --set airflow.image.tag=$(VERSION) --output-dir k8s/local
+	helm template --namespace $(NAMESPACE) $(SERVICE_NAME) helm/airflow/ -f helm/values.yaml --set airflow.image.repository=$(IMAGE_NAME) --set airflow.image.tag=$(VERSION) --output-dir k8s/local
 
 cleanup:
 	@echo "Cleaning up airflow deployment and persistent volume..."

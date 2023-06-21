@@ -164,7 +164,7 @@ if [[ "${INSTALLATION_TYPE}" == "RUNTIME" ]]; then
 
 else
     get_dev_apt_deps
-    install_debian_dev_dependencies
+    install_debian_runtime_dependencies
     install_docker_cli
 fi
 EOF
@@ -849,7 +849,7 @@ EOF
 # FROM ${PYTHON_BASE_IMAGE} as airflow-build-image
 FROM ${UBUNTU_BASE_IMAGE} as airflow-build-image
 
-# COPY sources.list /etc/apt/sources.list
+COPY sources.list /etc/apt/sources.list
 
 # Install Python 3.8
 RUN apt-get update && apt-get install -y \
@@ -1064,7 +1064,7 @@ RUN if [[ -f /docker-context-files/requirements.txt ]]; then \
 ##############################################################################################
 FROM ${UBUNTU_BASE_IMAGE} as main
 
-# COPY sources.list /etc/apt/sources.list
+COPY sources.list /etc/apt/sources.list
 COPY pip.conf /etc/pip.conf
 COPY pip-constraints.txt /usr/local/share/pip-constraints.txt
 
