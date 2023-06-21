@@ -60,7 +60,7 @@ ARG AIRFLOW_VERSION_SPECIFICATION=""
 
 # By default PIP has progress bar but you can disable it.
 ARG PIP_PROGRESS_BAR="on"
-
+ARG INSTALLATION_TYPE="RUNTIME"
 ##############################################################################################
 # This is the script image where we keep all inlined bash scripts needed in other segments
 ##############################################################################################
@@ -164,7 +164,7 @@ if [[ "${INSTALLATION_TYPE}" == "RUNTIME" ]]; then
 
 else
     get_dev_apt_deps
-    install_debian_runtime_dependencies
+    install_debian_dev_dependencies
     install_docker_cli
 fi
 EOF

@@ -63,6 +63,13 @@ airflow:
     AIRFLOW__KUBERNETES_EXECUTOR__DELETE_WORKER_PODS_ON_FAILURE: "False"
     AIRFLOW__KUBERNETES_EXECUTOR__NAMESPACE: "default"
 
+    # Metrics
+    AIRFLOW__METRICS__STATSD_ON: "True"
+    AIRFLOW__METRICS__STATSD_PORT: "9125"
+    AIRFLOW__METRICS__STATSD_PREFIX: "airflow"
+    AIRFLOW__METRICS__STATSD_ALLOW_LIST: "scheduler,dag_processing_import_errors,dagbag_size,executor"
+    AIRFLOW__METRICS__STATSD_HOST: "statsd-exporter.default"
+
     ## Email (SMTP) - Required for alerting through email
     # AIRFLOW__EMAIL__EMAIL_BACKEND: "airflow.utils.email.send_email_smtp"
     # AIRFLOW__SMTP__SMTP_HOST: ""
